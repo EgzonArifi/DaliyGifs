@@ -2,10 +2,19 @@ import Vapor
 import HTTP
 import VaporPostgreSQL
 import Foundation
+import Fluent
 
-let drop = Droplet(
-    providers: [VaporPostgreSQL.Provider.self]
-)
+let drop = Droplet()
+try drop.addProvider(VaporPostgreSQL.Provider)
+drop.preparations += Wishlist.self
+drop.preparations += TILUser.self
+
+let tilusers = TILUserController()
+tilusers.addRoutes(drop: drop)
+
+let wishlist = WishlistsController()
+wishlist.addRoutes(drop: drop)
+
 
 drop.get("version") { request in
     if let db = drop.database?.driver as? PostgreSQLDriver {
@@ -14,6 +23,11 @@ drop.get("version") { request in
     } else {
         return "No db connection"
     }
+}
+
+drop.get("password") { request in
+    let input: Valid<EmailValidator> = try request.data["input"].validated()
+    return "Validated \(input.value)"
 }
 
 drop.get("trending") { request in
